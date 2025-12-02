@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Peer Review Gauntlet</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,700;1,400&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <div id="ui-layer">
+            <div id="stats-bar">
+                <div class="stat-item" title="Originality">
+                    <span class="icon">💡</span>
+                    <span class="label">Novelty</span>
+                    <div class="bar-container"><div id="bar-novelty" class="bar-fill"></div></div>
+                    <span id="val-novelty" class="value">100</span>
+                </div>
+                <div class="stat-item" title="Methodological Solidity">
+                    <span class="icon">🛡️</span>
+                    <span class="label">Robustness</span>
+                    <div class="bar-container"><div id="bar-robustness" class="bar-fill"></div></div>
+                    <span id="val-robustness" class="value">100</span>
+                </div>
+                <div class="stat-item" title="Writing Quality">
+                    <span class="icon">✒️</span>
+                    <span class="label">Clarity</span>
+                    <div class="bar-container"><div id="bar-clarity" class="bar-fill"></div></div>
+                    <span id="val-clarity" class="value">100</span>
+                </div>
+                <div class="stat-item" title="References">
+                    <span class="icon">📚</span>
+                    <span class="label">Citations</span>
+                    <div class="bar-container"><div id="bar-citations" class="bar-fill"></div></div>
+                    <span id="val-citations" class="value">100</span>
+                </div>
+                <div class="stat-item" title="Visuals">
+                    <span class="icon">📊</span>
+                    <span class="label">Figures</span>
+                    <div class="bar-container"><div id="bar-figures" class="bar-fill"></div></div>
+                    <span id="val-figures" class="value">100</span>
+                </div>
+            </div>
+
+            <div id="defense-bar">
+                <!-- Defenses will be injected here -->
+                <div class="defense-slot" data-type="supplementary">
+                    <span class="icon">📂</span>
+                    <span class="cost">2mo</span>
+                    <span class="name">Supp. Material</span>
+                </div>
+                <div class="defense-slot" data-type="response">
+                    <span class="icon">✉️</span>
+                    <span class="cost">1wk</span>
+                    <span class="name">Response Letter</span>
+                </div>
+                <div class="defense-slot" data-type="coauthor">
+                    <span class="icon">👴</span>
+                    <span class="cost">Auth</span>
+                    <span class="name">Coauthor Shield</span>
+                </div>
+            </div>
+
+            <div id="dialogue-box" class="hidden">
+                <div id="speaker-name">Reviewer 2</div>
+                <div id="dialogue-text">This paper is fundamentally flawed.</div>
+                <button id="dialogue-next">Next</button>
+            </div>
+
+            <div id="notification-area"></div>
+
+            <div id="game-over-screen" class="hidden">
+                <h1 id="end-title">REJECTED</h1>
+                <p id="end-reason">Your novelty was insufficient for this journal.</p>
+                <button id="restart-btn">Submit Elsewhere</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
