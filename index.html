@@ -4,16 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Peer Review Bros 🍄</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <title>Crash the Reviewers 🦊</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
             padding: 0;
-            background: #87CEEB;
-            /* Sky Blue */
+            background: #000;
             overflow: hidden;
-            font-family: 'Press Start 2P', cursive;
+            font-family: 'Bangers', cursive;
         }
 
         canvas {
@@ -24,11 +23,17 @@
             position: absolute;
             top: 20px;
             left: 20px;
-            color: #fff;
-            text-shadow: 3px 3px #000;
-            font-size: 20px;
+            color: #ff9f43;
+            text-shadow: 3px 3px #d35400;
+            font-size: 30px;
             pointer-events: none;
             z-index: 10;
+            display: flex;
+            gap: 20px;
+        }
+
+        #wumpa-counter {
+            color: #e67e22;
         }
 
         #start-screen {
@@ -37,7 +42,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.85);
+            background: radial-gradient(circle, #e67e22 0%, #d35400 100%);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -46,31 +51,32 @@
             z-index: 200;
         }
 
+        h1 {
+            font-size: 80px;
+            margin: 0;
+            text-shadow: 5px 5px #000;
+            transform: rotate(-5deg);
+        }
+
         button {
-            font-family: 'Press Start 2P', cursive;
-            padding: 20px 40px;
-            font-size: 20px;
-            background: #e74c3c;
+            font-family: 'Bangers', cursive;
+            padding: 20px 50px;
+            font-size: 30px;
+            background: #2ecc71;
             color: #fff;
-            border: 4px solid #fff;
+            border: 5px solid #fff;
             cursor: pointer;
-            margin-top: 30px;
-            box-shadow: 0 6px #c0392b;
-            transition: all 0.1s;
+            margin-top: 50px;
+            box-shadow: 0 10px #27ae60;
+            transition: transform 0.1s;
+        }
+
+        button:hover {
+            transform: scale(1.1);
         }
 
         button:active {
-            transform: translateY(4px);
-            box-shadow: 0 2px #c0392b;
-        }
-
-        .story-text {
-            max-width: 600px;
-            text-align: center;
-            line-height: 1.6;
-            margin-bottom: 20px;
-            font-size: 14px;
-            color: #bdc3c7;
+            transform: scale(0.95);
         }
     </style>
 </head>
@@ -79,25 +85,14 @@
     <canvas id="gameCanvas"></canvas>
 
     <div id="ui">
-        <div>SCORE: <span id="score">0</span></div>
-        <div>LIVES: <span id="lives">3</span></div>
-        <div style="font-size: 12px; margin-top: 10px; color: #f1c40f;">LEVEL: <span id="level-name">The Lab</span>
-        </div>
+        <div id="wumpa-counter">🍎 <span id="score">0</span></div>
+        <div>❤️ <span id="lives">3</span></div>
     </div>
 
     <div id="start-screen">
-        <h1
-            style="color:#f1c40f; text-shadow: 4px 4px #c0392b; font-size: 40px; text-align: center; margin-bottom: 10px;">
-            SUPER PEER REVIEW<br>BROS</h1>
-        <div class="story-text">
-            Your paper is ready.<br>
-            But the path to publication is long and treacherous.<br>
-            Jump over <strong>Data Gaps</strong>.<br>
-            Stomp on <strong>Reviewers</strong>.<br>
-            Defeat the <strong>Editor</strong>.
-        </div>
-        <p style="color: #3498db; font-size: 12px;">CONTROLS: A/D to Move | SPACE to Jump</p>
-        <button onclick="startGame()">SUBMIT MANUSCRIPT</button>
+        <h1>CRASH THE<br>REVIEWERS</h1>
+        <p style="font-size: 24px; text-shadow: 2px 2px #000;">A / D to Move | SPACE to Jump | K to SPIN!</p>
+        <button onclick="startGame()">WOAH!</button>
     </div>
 
     <script>
@@ -111,334 +106,311 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- GAME CONSTANTS ---
-        const GRAVITY = 0.6;
-        const TERMINAL_VELOCITY = 15;
-        const PLAYER_SPEED = 6;
-        const JUMP_FORCE = -14;
-        const TILE_SIZE = 50;
-
-        // --- ASSETS & GRAPHICS ---
-        function drawPixelRect(ctx, x, y, w, h, color) {
-            ctx.fillStyle = color;
-            ctx.fillRect(Math.floor(x), Math.floor(y), w, h);
-        }
-
-        function drawSprite(ctx, type, x, y, w, h, dir, frame) {
-            const cx = x + w / 2;
-            const cy = y + h / 2;
-
-            if (type === 'player') {
-                // Lab Coat Researcher
-                // Body
-                drawPixelRect(ctx, x + 10, y + 20, 30, 30, '#fff'); // Coat
-                drawPixelRect(ctx, x + 20, y + 20, 10, 30, '#3498db'); // Shirt/Tie
-                // Legs (animated)
-                const legOffset = Math.sin(frame * 0.2) * 5;
-                drawPixelRect(ctx, x + 10, y + 50, 12, 10, '#2c3e50'); // Leg L
-                drawPixelRect(ctx, x + 28, y + 50, 12, 10, '#2c3e50'); // Leg R
-                // Head
-                drawPixelRect(ctx, x + 10, y, 30, 25, '#f1c40f'); // Skin
-                drawPixelRect(ctx, x + 10, y, 30, 8, '#8e44ad'); // Hair
-                // Glasses
-                ctx.fillStyle = '#000';
-                if (dir > 0) {
-                    ctx.fillRect(x + 25, y + 10, 10, 5);
-                } else {
-                    ctx.fillRect(x + 15, y + 10, 10, 5);
-                }
-                // Paper
-                drawPixelRect(ctx, x + (dir > 0 ? 35 : -5), y + 30, 10, 15, '#ecf0f1');
-
-            } else if (type === 'ground') {
-                // Grass block
-                drawPixelRect(ctx, x, y, w, h, '#795548'); // Dirt
-                drawPixelRect(ctx, x, y, w, 10, '#4CAF50'); // Grass top
-                // Texture
-                ctx.fillStyle = '#5D4037';
-                ctx.fillRect(x + 10, y + 20, 5, 5);
-                ctx.fillRect(x + 30, y + 35, 5, 5);
-
-            } else if (type === 'brick') {
-                // Books
-                drawPixelRect(ctx, x, y, w, h, '#C0392B'); // Red book cover
-                drawPixelRect(ctx, x + 5, y + 5, w - 10, 5, '#fff'); // Pages
-                drawPixelRect(ctx, x + 5, y + 15, w - 10, 5, '#fff');
-                drawPixelRect(ctx, x + 5, y + 25, w - 10, 5, '#fff');
-
-            } else if (type === 'enemy') {
-                // Reviewer 2 (Devil-like)
-                drawPixelRect(ctx, x, y + 10, w, h - 10, '#e74c3c'); // Red body
-                // Horns
-                drawPixelRect(ctx, x + 5, y, 5, 10, '#fff');
-                drawPixelRect(ctx, x + w - 10, y, 5, 10, '#fff');
-                // Angry Eyes
-                ctx.fillStyle = '#fff';
-                ctx.beginPath();
-                ctx.moveTo(x + 10, y + 20);
-                ctx.lineTo(x + 20, y + 25);
-                ctx.lineTo(x + 10, y + 25);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.moveTo(x + w - 10, y + 20);
-                ctx.lineTo(x + w - 20, y + 25);
-                ctx.lineTo(x + w - 10, y + 25);
-                ctx.fill();
-                // Pen
-                drawPixelRect(ctx, x - 5, y + 30, 5, 20, '#fff');
-
-            } else if (type === 'boss') {
-                // Editor Desk
-                drawPixelRect(ctx, x, y + 40, w, h - 40, '#8e44ad'); // Desk
-                // Editor Head
-                drawPixelRect(ctx, x + 30, y, 40, 40, '#f1c40f');
-                // Crown
-                drawPixelRect(ctx, x + 30, y - 10, 40, 10, '#f1c40f');
-                // Gavel
-                drawPixelRect(ctx, x - 20, y + 20, 20, 40, '#795548');
-            }
-        }
-
-        function drawSpeechBubble(ctx, text, x, y) {
-            const padding = 10;
-            ctx.font = '10px "Press Start 2P"';
-            const textWidth = ctx.measureText(text).width;
-            const w = textWidth + padding * 2;
-            const h = 30;
-
-            // Bubble
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(x - w / 2, y - h - 10, w, h);
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x - w / 2, y - h - 10, w, h);
-
-            // Tail
-            ctx.beginPath();
-            ctx.moveTo(x, y - 10);
-            ctx.lineTo(x - 5, y - 10);
-            ctx.lineTo(x, y);
-            ctx.lineTo(x + 5, y - 10);
-            ctx.fill();
-            ctx.stroke();
-
-            // Text
-            ctx.fillStyle = '#000';
-            ctx.fillText(text, x - w / 2 + padding, y - h - 10 + 20);
-        }
+        // --- 3D ENGINE CONSTANTS ---
+        const FOV = 300; // Field of View / Focal Length
+        const CAMERA_Y = 150; // Camera height
+        const CAMERA_Z = -300; // Camera distance behind player
+        const LANE_WIDTH = 120;
+        const SEGMENT_LENGTH = 100;
+        const DRAW_DISTANCE = 3000;
 
         // --- GAME STATE ---
         let gameState = 'START';
         let score = 0;
         let lives = 3;
-        let cameraX = 0;
         let frame = 0;
-        let levelName = "The Lab";
+        let speed = 15;
+        let worldZ = 0; // How far we've run
 
         // --- INPUT ---
-        const keys = { left: false, right: false, up: false };
+        const keys = { left: false, right: false, jump: false, spin: false };
         window.addEventListener('keydown', e => {
-            if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = true;
-            if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = true;
-            if (e.code === 'Space' || e.code === 'ArrowUp') keys.up = true;
-        });
-        window.addEventListener('keyup', e => {
-            if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = false;
-            if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = false;
-            if (e.code === 'Space' || e.code === 'ArrowUp') keys.up = false;
+            if (e.code === 'KeyA' || e.code === 'ArrowLeft') changeLane(-1);
+            if (e.code === 'KeyD' || e.code === 'ArrowRight') changeLane(1);
+            if (e.code === 'Space' || e.code === 'ArrowUp') jump();
+            if (e.code === 'KeyK' || e.code === 'ShiftLeft') spin();
         });
 
-        // --- ENTITIES ---
-        class Entity {
-            constructor(x, y, w, h, type) {
-                this.x = x;
-                this.y = y;
-                this.w = w;
-                this.h = h;
-                this.type = type;
-                this.vx = 0;
-                this.vy = 0;
-                this.grounded = false;
-                this.markedForDeletion = false;
-                this.dir = 1;
-            }
-            update() { }
-            draw(ctx, camX) {
-                drawSprite(ctx, this.type, this.x - camX, this.y, this.w, this.h, this.dir, frame);
+        // --- PLAYER ---
+        const player = {
+            lane: 0, // -1 (Left), 0 (Center), 1 (Right)
+            x: 0, // Interpolated X
+            y: 0, // Y (Jump)
+            z: 0, // Fixed Z relative to camera logic
+            vy: 0,
+            isJumping: false,
+            isSpinning: false,
+            spinTimer: 0,
+            targetX: 0
+        };
+
+        function changeLane(dir) {
+            if (gameState !== 'PLAYING') return;
+            player.lane += dir;
+            if (player.lane < -1) player.lane = -1;
+            if (player.lane > 1) player.lane = 1;
+            player.targetX = player.lane * LANE_WIDTH;
+        }
+
+        function jump() {
+            if (gameState !== 'PLAYING') return;
+            if (!player.isJumping) {
+                player.vy = -25;
+                player.isJumping = true;
             }
         }
 
-        class Player extends Entity {
-            constructor(x, y) {
-                super(x, y, 40, 60, 'player');
-            }
-
-            update() {
-                // Horizontal
-                if (keys.left) { this.vx = -PLAYER_SPEED; this.dir = -1; }
-                else if (keys.right) { this.vx = PLAYER_SPEED; this.dir = 1; }
-                else this.vx = 0;
-
-                // Jump
-                if (keys.up && this.grounded) {
-                    this.vy = JUMP_FORCE;
-                    this.grounded = false;
-                }
-
-                // Gravity
-                this.vy += GRAVITY;
-                if (this.vy > TERMINAL_VELOCITY) this.vy = TERMINAL_VELOCITY;
-
-                this.x += this.vx;
-                this.y += this.vy;
-
-                // Pit Death
-                if (this.y > canvas.height + 100) {
-                    die();
-                }
+        function spin() {
+            if (gameState !== 'PLAYING') return;
+            if (!player.isSpinning) {
+                player.isSpinning = true;
+                player.spinTimer = 20; // Frames
             }
         }
 
-        class Enemy extends Entity {
-            constructor(x, y, patrolDist, phrase) {
-                super(x, y, 40, 40, 'enemy');
-                this.startX = x;
-                this.patrolDist = patrolDist;
-                this.vx = -2;
-                this.phrase = phrase;
-                this.speaking = false;
-            }
+        // --- OBJECTS ---
+        let objects = []; // { type, lane, z, active }
 
-            update() {
-                this.x += this.vx;
-                if (this.x < this.startX - this.patrolDist || this.x > this.startX + this.patrolDist) {
-                    this.vx *= -1;
-                }
+        function spawnObject(z) {
+            const lane = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
+            const r = Math.random();
+            let type = 'crate';
 
-                // Speak if player is close
-                const dist = Math.abs(player.x - this.x);
-                this.speaking = dist < 200 && dist > 50;
-            }
+            if (r > 0.8) type = 'enemy';
+            else if (r > 0.6) type = 'tnt';
+            else if (r > 0.4) type = 'pit';
+            else type = 'crate';
 
-            draw(ctx, camX) {
-                super.draw(ctx, camX);
-                if (this.speaking) {
-                    drawSpeechBubble(ctx, this.phrase, this.x - camX + 20, this.y);
-                }
-            }
+            objects.push({ type, lane, z, active: true, width: 60, height: 60 });
         }
-
-        class Boss extends Entity {
-            constructor(x, y) {
-                super(x, y, 100, 100, 'boss');
-                this.hp = 3;
-                this.timer = 0;
-                this.phrase = "REJECTED!";
-            }
-
-            update() {
-                this.timer++;
-                this.y = this.y + Math.sin(this.timer * 0.05) * 1;
-
-                if (this.timer % 100 === 0) {
-                    this.phrase = Math.random() > 0.5 ? "REJECTED!" : "REVISE!";
-                }
-            }
-
-            draw(ctx, camX) {
-                super.draw(ctx, camX);
-                drawSpeechBubble(ctx, this.phrase, this.x - camX + 50, this.y);
-            }
-        }
-
-        // --- LEVEL GENERATION ---
-        let player;
-        let platforms = [];
-        let enemies = [];
-        let boss;
-        let levelEnd = 0;
 
         function initLevel() {
-            player = new Player(100, 300);
-            platforms = [];
-            enemies = [];
-            boss = null;
-            cameraX = 0;
+            objects = [];
+            worldZ = 0;
             score = 0;
+            lives = 3;
+            player.lane = 0;
+            player.x = 0;
+            player.targetX = 0;
 
-            // --- SECTION 1: THE LAB (0 - 1500) ---
-            // Ground
-            for (let i = 0; i < 30; i++) {
-                if (i < 10 || i > 15) // Pit at 10-15
-                    platforms.push({ x: i * TILE_SIZE, y: canvas.height - TILE_SIZE, w: TILE_SIZE, h: TILE_SIZE, type: 'ground' });
+            // Pre-spawn some objects
+            for (let z = 500; z < DRAW_DISTANCE; z += 400) {
+                spawnObject(z);
             }
-            // Platforms over pit
-            platforms.push({ x: 600, y: canvas.height - 200, w: 100, h: 40, type: 'brick' });
-            platforms.push({ x: 800, y: canvas.height - 300, w: 100, h: 40, type: 'brick' });
-
-            enemies.push(new Enemy(500, canvas.height - 90, 100, "More data!"));
-            enemies.push(new Enemy(1200, canvas.height - 90, 100, "Wrong font!"));
-
-            // --- SECTION 2: THE CONFERENCE (1500 - 3000) ---
-            const offset = 1500;
-            for (let i = 0; i < 40; i++) {
-                if (i % 5 !== 0) // Gaps
-                    platforms.push({ x: offset + i * TILE_SIZE, y: canvas.height - TILE_SIZE, w: TILE_SIZE, h: TILE_SIZE, type: 'ground' });
-            }
-            // High structures
-            platforms.push({ x: offset + 500, y: canvas.height - 250, w: 200, h: 40, type: 'brick' });
-            platforms.push({ x: offset + 900, y: canvas.height - 400, w: 200, h: 40, type: 'brick' });
-
-            enemies.push(new Enemy(offset + 600, canvas.height - 290, 80, "Is this novel?"));
-            enemies.push(new Enemy(offset + 1000, canvas.height - 440, 80, "Cite me!"));
-
-            // --- SECTION 3: THE EDITORIAL OFFICE (3000 - 4000) ---
-            const offset2 = 3500;
-            for (let i = 0; i < 30; i++) {
-                platforms.push({ x: offset2 + i * TILE_SIZE, y: canvas.height - TILE_SIZE, w: TILE_SIZE, h: TILE_SIZE, type: 'ground' });
-            }
-
-            // Boss Arena
-            boss = new Boss(offset2 + 800, canvas.height - 200);
-            levelEnd = offset2 + 1500;
         }
 
-        // --- PHYSICS & COLLISION ---
-        function checkCollision(rect1, rect2) {
-            return (rect1.x < rect2.x + rect2.w &&
-                rect1.x + rect1.w > rect2.x &&
-                rect1.y < rect2.y + rect2.h &&
-                rect1.y + rect1.h > rect2.y);
+        // --- PROJECTION ---
+        function project(x, y, z) {
+            const scale = FOV / (FOV + z);
+            const x2d = (x * scale) + canvas.width / 2;
+            const y2d = ((y - CAMERA_Y) * scale) + canvas.height / 2;
+            return { x: x2d, y: y2d, scale: scale };
         }
 
-        function resolvePlatformCollisions(entity) {
-            entity.grounded = false;
-            for (let p of platforms) {
-                // Optimization: only check nearby platforms
-                if (Math.abs(p.x - entity.x) > 100) continue;
+        // --- DRAWING ---
+        function drawRect3D(x, y, z, w, h, color) {
+            const p = project(x, y, z);
+            const scaledW = w * p.scale;
+            const scaledH = h * p.scale;
 
-                if (checkCollision(entity, p)) {
-                    const overlapX = Math.min(entity.x + entity.w - p.x, p.x + p.w - entity.x);
-                    const overlapY = Math.min(entity.y + entity.h - p.y, p.y + p.h - entity.y);
+            // Simple depth shading
+            ctx.globalAlpha = Math.max(0.2, Math.min(1, 1 - (z / DRAW_DISTANCE)));
+            ctx.fillStyle = color;
+            ctx.fillRect(p.x - scaledW / 2, p.y - scaledH, scaledW, scaledH);
+            ctx.globalAlpha = 1.0;
+        }
 
-                    if (overlapX > overlapY) {
-                        if (entity.vy > 0 && entity.y + entity.h - entity.vy <= p.y + overlapY + 5) { // Tolerance
-                            entity.y = p.y - entity.h;
-                            entity.vy = 0;
-                            entity.grounded = true;
-                        } else if (entity.vy < 0) {
-                            entity.y = p.y + p.h;
-                            entity.vy = 0;
-                        }
-                    } else {
-                        if (entity.vx > 0) entity.x = p.x - entity.w;
-                        else if (entity.vx < 0) entity.x = p.x + p.w;
-                    }
+        function drawSprite3D(type, x, y, z, w, h) {
+            const p = project(x, y, z);
+            const sw = w * p.scale;
+            const sh = h * p.scale;
+
+            if (p.scale <= 0) return; // Behind camera
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+
+            if (type === 'player') {
+                // Crash-like
+                if (player.isSpinning) {
+                    ctx.rotate(frame * 1.5); // Spin effect
+                    ctx.fillStyle = '#e67e22'; // Orange blur
+                    ctx.beginPath();
+                    ctx.arc(0, -sh / 2, sw, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Body
+                    ctx.fillStyle = '#e67e22'; // Orange Fur
+                    ctx.fillRect(-sw / 2, -sh, sw, sh);
+                    // Pants
+                    ctx.fillStyle = '#2980b9'; // Blue Jeans
+                    ctx.fillRect(-sw / 2, -sh / 3, sw, sh / 3);
+                    // Shoes
+                    ctx.fillStyle = '#c0392b'; // Red Sneakers
+                    ctx.fillRect(-sw / 2, -sh / 6, sw / 2, sh / 6);
+                    ctx.fillRect(0, -sh / 6, sw / 2, sh / 6);
+                    // Face
+                    ctx.fillStyle = '#f1c40f'; // Muzzle
+                    ctx.fillRect(-sw / 4, -sh * 0.9, sw / 2, sh / 3);
+                }
+            } else if (type === 'crate') {
+                // Wumpa Crate
+                ctx.fillStyle = '#e67e22'; // Wood
+                ctx.fillRect(-sw / 2, -sh, sw, sh);
+                ctx.strokeStyle = '#d35400';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-sw / 2, -sh, sw, sh);
+                // Stripes
+                ctx.fillStyle = '#f39c12';
+                ctx.fillRect(-sw / 2 + 5, -sh + 5, sw - 10, sh - 10);
+                // Question Mark
+                ctx.fillStyle = '#fff';
+                ctx.font = `${Math.floor(sh / 2)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText('?', 0, -sh / 3);
+
+            } else if (type === 'tnt') {
+                ctx.fillStyle = '#c0392b'; // Red
+                ctx.fillRect(-sw / 2, -sh, sw, sh);
+                ctx.fillStyle = '#fff';
+                ctx.font = `${Math.floor(sh / 2)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText('TNT', 0, -sh / 3);
+
+            } else if (type === 'enemy') {
+                // Reviewer
+                ctx.fillStyle = '#8e44ad'; // Purple suit
+                ctx.fillRect(-sw / 2, -sh, sw, sh);
+                // Horns
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(-sw / 2, -sh - sh / 4, sw / 4, sh / 4);
+                ctx.fillRect(sw / 4, -sh - sh / 4, sw / 4, sh / 4);
+
+            } else if (type === 'pit') {
+                ctx.fillStyle = '#000';
+                // Draw flat on ground
+                // Actually pits are holes, so draw black rect on floor
+                // Reset transform for floor drawing logic?
+                // For simplicity, draw black rect slightly below ground level
+            }
+
+            ctx.restore();
+        }
+
+        // --- LOGIC ---
+        function update() {
+            // Move World
+            worldZ += speed;
+
+            // Player Physics
+            player.x += (player.targetX - player.x) * 0.2; // Smooth lane change
+
+            if (player.isJumping) {
+                player.y += player.vy;
+                player.vy += 1.5; // Gravity
+                if (player.y >= 0) {
+                    player.y = 0;
+                    player.vy = 0;
+                    player.isJumping = false;
                 }
             }
+
+            if (player.isSpinning) {
+                player.spinTimer--;
+                if (player.spinTimer <= 0) player.isSpinning = false;
+            }
+
+            // Object Management
+            // Spawn new
+            if (objects.length > 0 && objects[objects.length - 1].z < DRAW_DISTANCE - 400) {
+                spawnObject(objects[objects.length - 1].z + 400);
+            }
+
+            // Update & Collide
+            objects.forEach(obj => {
+                // Move towards player (relative Z)
+                // Actually, we keep objects at absolute Z, and subtract worldZ for rendering
+                // But for infinite runner, let's say objects have absolute Z
+                // And player is at worldZ.
+                // Relative Z = obj.z - worldZ
+            });
+
+            // Cleanup
+            objects = objects.filter(obj => obj.z - worldZ > -200);
+
+            checkCollisions();
         }
 
-        // --- GAME LOOP ---
+        function checkCollisions() {
+            objects.forEach(obj => {
+                if (!obj.active) return;
+
+                const relZ = obj.z - worldZ;
+
+                // Check Z depth (Player is at Z=0 roughly, maybe width/depth of 50)
+                if (relZ < 50 && relZ > -50) {
+                    // Check Lane
+                    // Simple lane check: if player is close to lane center
+                    const laneX = obj.lane * LANE_WIDTH;
+                    if (Math.abs(player.x - laneX) < 40) {
+
+                        // Collision!
+                        if (obj.type === 'pit') {
+                            if (player.y > -20) { // Not jumping high enough
+                                die("Fell into the Data Gap!");
+                            }
+                        } else if (obj.type === 'crate') {
+                            if (player.isSpinning || player.isJumping) {
+                                // Break crate
+                                obj.active = false;
+                                score += 10;
+                                document.getElementById('score').innerText = score;
+                            } else {
+                                // Bonk (stop player or just break it?)
+                                // Crash usually breaks crates by jumping/spinning. Running into them stops you.
+                                // Let's just break it for flow
+                                obj.active = false;
+                                score += 1;
+                                document.getElementById('score').innerText = score;
+                            }
+                        } else if (obj.type === 'enemy') {
+                            if (player.isSpinning) {
+                                // Kill enemy
+                                obj.active = false;
+                                score += 50;
+                                document.getElementById('score').innerText = score;
+                            } else {
+                                die("Reviewer 2 caught you!");
+                            }
+                        } else if (obj.type === 'tnt') {
+                            if (player.isSpinning) {
+                                die("Don't spin TNT!");
+                            } else {
+                                die("BOOM!");
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function die(reason) {
+            lives--;
+            document.getElementById('lives').innerText = lives;
+            if (lives <= 0) {
+                alert(reason + "\nGAME OVER");
+                location.reload();
+            } else {
+                // Respawn / Knockback
+                // Just clear nearby objects
+                objects.forEach(obj => {
+                    if (obj.z - worldZ < 500) obj.active = false;
+                });
+                player.isSpinning = true; // Invincibility frames visual
+                player.spinTimer = 60;
+            }
+        }
+
         function startGame() {
             document.getElementById('start-screen').style.display = 'none';
             initLevel();
@@ -446,102 +418,67 @@
             loop();
         }
 
-        function die() {
-            lives--;
-            document.getElementById('lives').innerText = lives;
-            if (lives > 0) {
-                // Respawn slightly back
-                player.y = 0;
-                player.vy = 0;
-                player.x = Math.max(100, player.x - 200);
-                // Ensure safe landing (hacky)
-                if (player.x > 1500 && player.x < 1800) player.x = 1500;
-            } else {
-                alert('REJECTED! Try again.');
-                location.reload();
-            }
-        }
-
         function loop() {
             if (gameState === 'START') return;
             frame++;
+            update();
 
-            // Background
-            ctx.fillStyle = '#87CEEB';
+            // Clear
+            ctx.fillStyle = '#87CEEB'; // Sky
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Clouds (Parallax)
-            ctx.fillStyle = 'rgba(255,255,255,0.6)';
-            ctx.beginPath();
-            ctx.arc((frame * 0.5) % (canvas.width + 200) - 100, 100, 50, 0, Math.PI * 2);
-            ctx.arc((frame * 0.5) % (canvas.width + 200) + 50, 120, 40, 0, Math.PI * 2);
-            ctx.fill();
+            // Floor (Checkerboard)
+            // Draw floor segments
+            const startZ = Math.floor(worldZ / SEGMENT_LENGTH) * SEGMENT_LENGTH;
 
-            if (gameState === 'PLAYING') {
-                player.update();
-                resolvePlatformCollisions(player);
+            for (let z = startZ + DRAW_DISTANCE; z >= startZ; z -= SEGMENT_LENGTH) {
+                const relZ = z - worldZ;
+                if (relZ < 10) continue;
 
-                // Camera
-                const targetCamX = player.x - canvas.width / 3;
-                cameraX += (targetCamX - cameraX) * 0.1; // Smooth cam
-                if (cameraX < 0) cameraX = 0;
+                const p1 = project(-LANE_WIDTH * 2.5, 0, relZ);
+                const p2 = project(LANE_WIDTH * 2.5, 0, relZ);
+                const p3 = project(LANE_WIDTH * 2.5, 0, relZ + SEGMENT_LENGTH);
+                const p4 = project(-LANE_WIDTH * 2.5, 0, relZ + SEGMENT_LENGTH);
 
-                // Level Name Update
-                if (player.x < 1500) levelName = "The Lab";
-                else if (player.x < 3500) levelName = "The Conference";
-                else levelName = "Editorial Office";
-                document.getElementById('level-name').innerText = levelName;
+                // Checker color
+                const segmentIndex = Math.floor(z / SEGMENT_LENGTH);
+                ctx.fillStyle = segmentIndex % 2 === 0 ? '#2ecc71' : '#27ae60';
 
-                // Enemies
-                enemies.forEach(e => {
-                    e.update();
-                    if (checkCollision(player, e)) {
-                        if (player.vy > 0 && player.y + player.h - player.vy <= e.y + e.h * 0.6) {
-                            e.markedForDeletion = true;
-                            player.vy = -10;
-                            score += 500;
-                            document.getElementById('score').innerText = score;
-                        } else {
-                            die();
-                        }
-                    }
-                });
-                enemies = enemies.filter(e => !e.markedForDeletion);
-
-                // Boss
-                if (boss) {
-                    boss.update();
-                    if (checkCollision(player, boss)) {
-                        if (player.vy > 0 && player.y + player.h - player.vy <= boss.y + boss.h * 0.6) {
-                            boss.hp--;
-                            player.vy = -12;
-                            boss.phrase = "OUCH! REVISE!";
-                            if (boss.hp <= 0) {
-                                alert('ACCEPTED! IMPACT FACTOR 10.0!');
-                                location.reload();
-                            }
-                        } else {
-                            die();
-                        }
-                    }
-                }
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.lineTo(p3.x, p3.y);
+                ctx.lineTo(p4.x, p4.y);
+                ctx.fill();
             }
 
-            // Draw Platforms
-            platforms.forEach(p => {
-                if (p.x - cameraX < canvas.width && p.x + p.w - cameraX > -100) {
-                    drawSprite(ctx, p.type, p.x - cameraX, p.y, p.w, p.h, 1, frame);
+            // Draw Objects (Back to Front)
+            // Sort objects by Z (descending) so far ones draw first
+            // Actually, we iterate our array. Since we spawn in increasing Z, we should iterate backwards?
+            // Or just filter visible ones and sort.
+            const visibleObjects = objects.filter(obj => obj.active && obj.z - worldZ > 10 && obj.z - worldZ < DRAW_DISTANCE);
+            visibleObjects.sort((a, b) => b.z - a.z);
+
+            visibleObjects.forEach(obj => {
+                const relZ = obj.z - worldZ;
+                const x = obj.lane * LANE_WIDTH;
+
+                if (obj.type === 'pit') {
+                    // Draw pit on floor
+                    const p = project(x, 0, relZ);
+                    const w = 100 * p.scale;
+                    const h = 50 * p.scale; // Length on floor
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.ellipse(p.x, p.y, w / 2, w / 2, 0, 0, Math.PI * 2); // Simple circle pit
+                    ctx.fill();
+                } else {
+                    drawSprite3D(obj.type, x, player.y, relZ, obj.width, obj.height);
                 }
             });
 
-            // Draw Enemies
-            enemies.forEach(e => e.draw(ctx, cameraX));
-
-            // Draw Boss
-            if (boss) boss.draw(ctx, cameraX);
-
             // Draw Player
-            player.draw(ctx, cameraX);
+            drawSprite3D('player', player.x, player.y, 0, 60, 80);
 
             requestAnimationFrame(loop);
         }
