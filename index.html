@@ -4,15 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crash the Reviewers 🦊</title>
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+    <title>The Peer Review Gauntlet: Dream Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
             padding: 0;
             background: #000;
             overflow: hidden;
-            font-family: 'Bangers', cursive;
+            font-family: 'Press Start 2P', cursive;
         }
 
         canvas {
@@ -23,77 +23,48 @@
             position: absolute;
             top: 20px;
             left: 20px;
-            color: #ff9f43;
-            text-shadow: 3px 3px #d35400;
-            font-size: 30px;
-            pointer-events: none;
+            color: #fff;
+            text-shadow: 2px 2px #000;
+            font-size: 20px;
             z-index: 10;
-            display: flex;
-            gap: 20px;
+            display: none;
         }
 
-        #wumpa-counter {
-            color: #e67e22;
-        }
-
-        #start-screen {
+        #loading {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, #e67e22 0%, #d35400 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             color: #fff;
-            z-index: 200;
-        }
-
-        h1 {
-            font-size: 80px;
-            margin: 0;
-            text-shadow: 5px 5px #000;
-            transform: rotate(-5deg);
-        }
-
-        button {
-            font-family: 'Bangers', cursive;
-            padding: 20px 50px;
             font-size: 30px;
-            background: #2ecc71;
+        }
+
+        #dialogue-box {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            background: rgba(0, 0, 0, 0.8);
+            border: 4px solid #fff;
             color: #fff;
-            border: 5px solid #fff;
-            cursor: pointer;
-            margin-top: 50px;
-            box-shadow: 0 10px #27ae60;
-            transition: transform 0.1s;
-        }
-
-        button:hover {
-            transform: scale(1.1);
-        }
-
-        button:active {
-            transform: scale(0.95);
+            padding: 20px;
+            display: none;
+            z-index: 100;
+            font-size: 16px;
+            line-height: 1.5;
         }
     </style>
 </head>
 
 <body>
     <canvas id="gameCanvas"></canvas>
-
+    <div id="loading">LOADING ASSETS...</div>
     <div id="ui">
-        <div id="wumpa-counter">🍎 <span id="score">0</span></div>
-        <div>❤️ <span id="lives">3</span></div>
+        <div>SCORE: <span id="score">0</span></div>
+        <div>LIVES: <span id="lives">3</span></div>
     </div>
-
-    <div id="start-screen">
-        <h1>CRASH THE<br>REVIEWERS</h1>
-        <p style="font-size: 24px; text-shadow: 2px 2px #000;">A / D to Move | SPACE to Jump | K to SPIN!</p>
-        <button onclick="startGame()">WOAH!</button>
-    </div>
+    <div id="dialogue-box"></div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -106,43 +77,93 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- 3D ENGINE CONSTANTS ---
-        const FOV = 300; // Field of View / Focal Length
-        const CAMERA_Y = 150; // Camera height
-        const CAMERA_Z = -300; // Camera distance behind player
-        const LANE_WIDTH = 120;
-        const SEGMENT_LENGTH = 100;
-        const DRAW_DISTANCE = 3000;
+        // --- ASSETS ---
+        const assets = {
+            researcher: new Image(),
+            enemies: new Image(),
+            introBg: new Image(),
+            dreamBg: new Image()
+        };
+        let assetsLoaded = 0;
+
+        function loadAsset(name, src) {
+            assets[name].src = src;
+            assets[name].onload = () => {
+                assetsLoaded++;
+                if (assetsLoaded === 4) startGame();
+            };
+        }
+
+        loadAsset('researcher', 'assets/researcher.png');
+        loadAsset('enemies', 'assets/enemies.png');
+        loadAsset('introBg', 'assets/intro_bg.png');
+        loadAsset('dreamBg', 'assets/dream_bg.png');
 
         // --- GAME STATE ---
-        let gameState = 'START';
+        let gameState = 'LOADING'; // LOADING, INTRO, PLAYING, GAMEOVER
+        let frame = 0;
         let score = 0;
         let lives = 3;
-        let frame = 0;
-        let speed = 15;
-        let worldZ = 0; // How far we've run
 
         // --- INPUT ---
         const keys = { left: false, right: false, jump: false, spin: false };
         window.addEventListener('keydown', e => {
             if (e.code === 'KeyA' || e.code === 'ArrowLeft') changeLane(-1);
             if (e.code === 'KeyD' || e.code === 'ArrowRight') changeLane(1);
-            if (e.code === 'Space' || e.code === 'ArrowUp') jump();
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                if (gameState === 'INTRO') advanceIntro();
+                else jump();
+            }
             if (e.code === 'KeyK' || e.code === 'ShiftLeft') spin();
         });
 
-        // --- PLAYER ---
-        const player = {
-            lane: 0, // -1 (Left), 0 (Center), 1 (Right)
-            x: 0, // Interpolated X
-            y: 0, // Y (Jump)
-            z: 0, // Fixed Z relative to camera logic
-            vy: 0,
-            isJumping: false,
-            isSpinning: false,
-            spinTimer: 0,
-            targetX: 0
-        };
+        // --- INTRO SEQUENCE ---
+        let introStep = 0;
+        const introLines = [
+            { text: "PROFESSOR: 'Excellent work. The manuscript is ready.'", bg: 'introBg' },
+            { text: "PROFESSOR: 'But beware... Reviewer 2 is in a bad mood today.'", bg: 'introBg' },
+            { text: "RESEARCHER: 'I'll just take a quick nap before submitting...'", bg: 'introBg' },
+            { text: "*ENTERING THE NIGHTMARE REALM*", bg: 'dreamBg' }
+        ];
+
+        function advanceIntro() {
+            introStep++;
+            if (introStep >= introLines.length) {
+                gameState = 'PLAYING';
+                document.getElementById('dialogue-box').style.display = 'none';
+                document.getElementById('ui').style.display = 'block';
+                initGame();
+            } else {
+                showDialogue(introLines[introStep].text);
+            }
+        }
+
+        function showDialogue(text) {
+            const box = document.getElementById('dialogue-box');
+            box.innerText = text + "\n\n[PRESS SPACE]";
+            box.style.display = 'block';
+        }
+
+        // --- 3D RUNNER ENGINE ---
+        const FOV = 300;
+        const CAMERA_Y = 150;
+        const LANE_WIDTH = 140;
+        const DRAW_DISTANCE = 3000;
+        let worldZ = 0;
+        let speed = 20;
+
+        const player = { lane: 0, x: 0, y: 0, vy: 0, isJumping: false, isSpinning: false, spinTimer: 0, targetX: 0 };
+        let objects = [];
+
+        function initGame() {
+            objects = [];
+            worldZ = 0;
+            score = 0;
+            lives = 3;
+            player.lane = 0;
+            // Spawn initial objects
+            for (let z = 1000; z < DRAW_DISTANCE; z += 500) spawnObject(z);
+        }
 
         function changeLane(dir) {
             if (gameState !== 'PLAYING') return;
@@ -154,165 +175,37 @@
 
         function jump() {
             if (gameState !== 'PLAYING') return;
-            if (!player.isJumping) {
-                player.vy = -25;
-                player.isJumping = true;
-            }
+            if (!player.isJumping) { player.vy = -25; player.isJumping = true; }
         }
 
         function spin() {
             if (gameState !== 'PLAYING') return;
-            if (!player.isSpinning) {
-                player.isSpinning = true;
-                player.spinTimer = 20; // Frames
-            }
+            if (!player.isSpinning) { player.isSpinning = true; player.spinTimer = 30; }
         }
-
-        // --- OBJECTS ---
-        let objects = []; // { type, lane, z, active }
 
         function spawnObject(z) {
-            const lane = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
-            const r = Math.random();
-            let type = 'crate';
-
-            if (r > 0.8) type = 'enemy';
-            else if (r > 0.6) type = 'tnt';
-            else if (r > 0.4) type = 'pit';
-            else type = 'crate';
-
-            objects.push({ type, lane, z, active: true, width: 60, height: 60 });
+            const lane = Math.floor(Math.random() * 3) - 1;
+            const type = Math.random() > 0.5 ? 'enemy' : 'crate';
+            objects.push({ type, lane, z, active: true });
         }
 
-        function initLevel() {
-            objects = [];
-            worldZ = 0;
-            score = 0;
-            lives = 3;
-            player.lane = 0;
-            player.x = 0;
-            player.targetX = 0;
-
-            // Pre-spawn some objects
-            for (let z = 500; z < DRAW_DISTANCE; z += 400) {
-                spawnObject(z);
-            }
-        }
-
-        // --- PROJECTION ---
         function project(x, y, z) {
             const scale = FOV / (FOV + z);
-            const x2d = (x * scale) + canvas.width / 2;
-            const y2d = ((y - CAMERA_Y) * scale) + canvas.height / 2;
-            return { x: x2d, y: y2d, scale: scale };
+            return {
+                x: (x * scale) + canvas.width / 2,
+                y: ((y - CAMERA_Y) * scale) + canvas.height / 2,
+                scale: scale
+            };
         }
 
-        // --- DRAWING ---
-        function drawRect3D(x, y, z, w, h, color) {
-            const p = project(x, y, z);
-            const scaledW = w * p.scale;
-            const scaledH = h * p.scale;
-
-            // Simple depth shading
-            ctx.globalAlpha = Math.max(0.2, Math.min(1, 1 - (z / DRAW_DISTANCE)));
-            ctx.fillStyle = color;
-            ctx.fillRect(p.x - scaledW / 2, p.y - scaledH, scaledW, scaledH);
-            ctx.globalAlpha = 1.0;
-        }
-
-        function drawSprite3D(type, x, y, z, w, h) {
-            const p = project(x, y, z);
-            const sw = w * p.scale;
-            const sh = h * p.scale;
-
-            if (p.scale <= 0) return; // Behind camera
-
-            ctx.save();
-            ctx.translate(p.x, p.y);
-
-            if (type === 'player') {
-                // Crash-like
-                if (player.isSpinning) {
-                    ctx.rotate(frame * 1.5); // Spin effect
-                    ctx.fillStyle = '#e67e22'; // Orange blur
-                    ctx.beginPath();
-                    ctx.arc(0, -sh / 2, sw, 0, Math.PI * 2);
-                    ctx.fill();
-                } else {
-                    // Body
-                    ctx.fillStyle = '#e67e22'; // Orange Fur
-                    ctx.fillRect(-sw / 2, -sh, sw, sh);
-                    // Pants
-                    ctx.fillStyle = '#2980b9'; // Blue Jeans
-                    ctx.fillRect(-sw / 2, -sh / 3, sw, sh / 3);
-                    // Shoes
-                    ctx.fillStyle = '#c0392b'; // Red Sneakers
-                    ctx.fillRect(-sw / 2, -sh / 6, sw / 2, sh / 6);
-                    ctx.fillRect(0, -sh / 6, sw / 2, sh / 6);
-                    // Face
-                    ctx.fillStyle = '#f1c40f'; // Muzzle
-                    ctx.fillRect(-sw / 4, -sh * 0.9, sw / 2, sh / 3);
-                }
-            } else if (type === 'crate') {
-                // Wumpa Crate
-                ctx.fillStyle = '#e67e22'; // Wood
-                ctx.fillRect(-sw / 2, -sh, sw, sh);
-                ctx.strokeStyle = '#d35400';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(-sw / 2, -sh, sw, sh);
-                // Stripes
-                ctx.fillStyle = '#f39c12';
-                ctx.fillRect(-sw / 2 + 5, -sh + 5, sw - 10, sh - 10);
-                // Question Mark
-                ctx.fillStyle = '#fff';
-                ctx.font = `${Math.floor(sh / 2)}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.fillText('?', 0, -sh / 3);
-
-            } else if (type === 'tnt') {
-                ctx.fillStyle = '#c0392b'; // Red
-                ctx.fillRect(-sw / 2, -sh, sw, sh);
-                ctx.fillStyle = '#fff';
-                ctx.font = `${Math.floor(sh / 2)}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.fillText('TNT', 0, -sh / 3);
-
-            } else if (type === 'enemy') {
-                // Reviewer
-                ctx.fillStyle = '#8e44ad'; // Purple suit
-                ctx.fillRect(-sw / 2, -sh, sw, sh);
-                // Horns
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(-sw / 2, -sh - sh / 4, sw / 4, sh / 4);
-                ctx.fillRect(sw / 4, -sh - sh / 4, sw / 4, sh / 4);
-
-            } else if (type === 'pit') {
-                ctx.fillStyle = '#000';
-                // Draw flat on ground
-                // Actually pits are holes, so draw black rect on floor
-                // Reset transform for floor drawing logic?
-                // For simplicity, draw black rect slightly below ground level
-            }
-
-            ctx.restore();
-        }
-
-        // --- LOGIC ---
         function update() {
-            // Move World
             worldZ += speed;
-
-            // Player Physics
-            player.x += (player.targetX - player.x) * 0.2; // Smooth lane change
+            player.x += (player.targetX - player.x) * 0.2;
 
             if (player.isJumping) {
                 player.y += player.vy;
-                player.vy += 1.5; // Gravity
-                if (player.y >= 0) {
-                    player.y = 0;
-                    player.vy = 0;
-                    player.isJumping = false;
-                }
+                player.vy += 1.5;
+                if (player.y >= 0) { player.y = 0; player.vy = 0; player.isJumping = false; }
             }
 
             if (player.isSpinning) {
@@ -320,166 +213,110 @@
                 if (player.spinTimer <= 0) player.isSpinning = false;
             }
 
-            // Object Management
-            // Spawn new
-            if (objects.length > 0 && objects[objects.length - 1].z < DRAW_DISTANCE - 400) {
-                spawnObject(objects[objects.length - 1].z + 400);
-            }
-
-            // Update & Collide
-            objects.forEach(obj => {
-                // Move towards player (relative Z)
-                // Actually, we keep objects at absolute Z, and subtract worldZ for rendering
-                // But for infinite runner, let's say objects have absolute Z
-                // And player is at worldZ.
-                // Relative Z = obj.z - worldZ
-            });
-
-            // Cleanup
+            // Spawn & Cleanup
+            if (objects.length > 0 && objects[objects.length - 1].z < DRAW_DISTANCE - 400) spawnObject(objects[objects.length - 1].z + 500);
             objects = objects.filter(obj => obj.z - worldZ > -200);
 
-            checkCollisions();
-        }
-
-        function checkCollisions() {
+            // Collisions
             objects.forEach(obj => {
                 if (!obj.active) return;
-
                 const relZ = obj.z - worldZ;
-
-                // Check Z depth (Player is at Z=0 roughly, maybe width/depth of 50)
-                if (relZ < 50 && relZ > -50) {
-                    // Check Lane
-                    // Simple lane check: if player is close to lane center
-                    const laneX = obj.lane * LANE_WIDTH;
-                    if (Math.abs(player.x - laneX) < 40) {
-
-                        // Collision!
-                        if (obj.type === 'pit') {
-                            if (player.y > -20) { // Not jumping high enough
-                                die("Fell into the Data Gap!");
-                            }
-                        } else if (obj.type === 'crate') {
-                            if (player.isSpinning || player.isJumping) {
-                                // Break crate
-                                obj.active = false;
-                                score += 10;
-                                document.getElementById('score').innerText = score;
-                            } else {
-                                // Bonk (stop player or just break it?)
-                                // Crash usually breaks crates by jumping/spinning. Running into them stops you.
-                                // Let's just break it for flow
-                                obj.active = false;
-                                score += 1;
-                                document.getElementById('score').innerText = score;
-                            }
-                        } else if (obj.type === 'enemy') {
-                            if (player.isSpinning) {
-                                // Kill enemy
-                                obj.active = false;
-                                score += 50;
-                                document.getElementById('score').innerText = score;
-                            } else {
-                                die("Reviewer 2 caught you!");
-                            }
-                        } else if (obj.type === 'tnt') {
-                            if (player.isSpinning) {
-                                die("Don't spin TNT!");
-                            } else {
-                                die("BOOM!");
-                            }
+                if (Math.abs(relZ) < 50 && Math.abs(player.x - obj.lane * LANE_WIDTH) < 50) {
+                    if (obj.type === 'enemy') {
+                        if (player.isSpinning) {
+                            obj.active = false; score += 100;
+                        } else {
+                            lives--;
+                            obj.active = false;
+                            if (lives <= 0) alert("GAME OVER");
                         }
+                    } else {
+                        obj.active = false; score += 10;
                     }
+                    document.getElementById('score').innerText = score;
+                    document.getElementById('lives').innerText = lives;
                 }
             });
         }
 
-        function die(reason) {
-            lives--;
-            document.getElementById('lives').innerText = lives;
-            if (lives <= 0) {
-                alert(reason + "\nGAME OVER");
-                location.reload();
-            } else {
-                // Respawn / Knockback
-                // Just clear nearby objects
-                objects.forEach(obj => {
-                    if (obj.z - worldZ < 500) obj.active = false;
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (gameState === 'LOADING') {
+                return;
+            }
+
+            if (gameState === 'INTRO') {
+                // Draw Intro Background
+                const bg = assets[introLines[introStep].bg];
+                // Draw cover to fill screen
+                const scale = Math.max(canvas.width / bg.width, canvas.height / bg.height);
+                const w = bg.width * scale;
+                const h = bg.height * scale;
+                ctx.drawImage(bg, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+                return;
+            }
+
+            if (gameState === 'PLAYING') {
+                // Draw Dream Background (Parallax)
+                const bg = assets.dreamBg;
+                // Simple tiling or stretch
+                const scale = Math.max(canvas.width / bg.width, canvas.height / bg.height);
+                ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+
+                // Draw Floor (Transparent/Grid)
+                // ... (Omitted for visual clarity with full BG)
+
+                // Draw Objects
+                const visibleObjects = objects.filter(obj => obj.active && obj.z - worldZ > 0);
+                visibleObjects.sort((a, b) => b.z - a.z);
+
+                visibleObjects.forEach(obj => {
+                    const relZ = obj.z - worldZ;
+                    const p = project(obj.lane * LANE_WIDTH, 0, relZ);
+                    const s = p.scale * 200; // Base size
+
+                    if (obj.type === 'enemy') {
+                        // Draw Enemy Sprite (Assuming sprite sheet, taking a crop)
+                        // Source: 0,0, 100,100 (Example)
+                        ctx.drawImage(assets.enemies, 0, 0, 256, 256, p.x - s / 2, p.y - s, s, s);
+                    } else {
+                        // Crate
+                        ctx.fillStyle = 'orange';
+                        ctx.fillRect(p.x - s / 2, p.y - s, s, s);
+                    }
                 });
-                player.isSpinning = true; // Invincibility frames visual
-                player.spinTimer = 60;
+
+                // Draw Player
+                const pScale = 1.0; // Player is at Z=0
+                const px = canvas.width / 2 + player.x;
+                const py = canvas.height / 2 - CAMERA_Y + player.y + 100; // Offset
+                const ps = 200;
+
+                ctx.save();
+                if (player.isSpinning) {
+                    ctx.translate(px, py);
+                    ctx.rotate(frame * 0.5);
+                    ctx.drawImage(assets.researcher, 0, 0, 256, 256, -ps / 2, -ps / 2, ps, ps);
+                } else {
+                    // Draw Researcher Sprite
+                    ctx.drawImage(assets.researcher, 0, 0, 256, 256, px - ps / 2, py - ps, ps, ps);
+                }
+                ctx.restore();
             }
         }
 
         function startGame() {
-            document.getElementById('start-screen').style.display = 'none';
-            initLevel();
-            gameState = 'PLAYING';
+            document.getElementById('loading').style.display = 'none';
+            gameState = 'INTRO';
+            showDialogue(introLines[0].text);
             loop();
         }
 
         function loop() {
-            if (gameState === 'START') return;
             frame++;
-            update();
-
-            // Clear
-            ctx.fillStyle = '#87CEEB'; // Sky
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Floor (Checkerboard)
-            // Draw floor segments
-            const startZ = Math.floor(worldZ / SEGMENT_LENGTH) * SEGMENT_LENGTH;
-
-            for (let z = startZ + DRAW_DISTANCE; z >= startZ; z -= SEGMENT_LENGTH) {
-                const relZ = z - worldZ;
-                if (relZ < 10) continue;
-
-                const p1 = project(-LANE_WIDTH * 2.5, 0, relZ);
-                const p2 = project(LANE_WIDTH * 2.5, 0, relZ);
-                const p3 = project(LANE_WIDTH * 2.5, 0, relZ + SEGMENT_LENGTH);
-                const p4 = project(-LANE_WIDTH * 2.5, 0, relZ + SEGMENT_LENGTH);
-
-                // Checker color
-                const segmentIndex = Math.floor(z / SEGMENT_LENGTH);
-                ctx.fillStyle = segmentIndex % 2 === 0 ? '#2ecc71' : '#27ae60';
-
-                ctx.beginPath();
-                ctx.moveTo(p1.x, p1.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.lineTo(p3.x, p3.y);
-                ctx.lineTo(p4.x, p4.y);
-                ctx.fill();
-            }
-
-            // Draw Objects (Back to Front)
-            // Sort objects by Z (descending) so far ones draw first
-            // Actually, we iterate our array. Since we spawn in increasing Z, we should iterate backwards?
-            // Or just filter visible ones and sort.
-            const visibleObjects = objects.filter(obj => obj.active && obj.z - worldZ > 10 && obj.z - worldZ < DRAW_DISTANCE);
-            visibleObjects.sort((a, b) => b.z - a.z);
-
-            visibleObjects.forEach(obj => {
-                const relZ = obj.z - worldZ;
-                const x = obj.lane * LANE_WIDTH;
-
-                if (obj.type === 'pit') {
-                    // Draw pit on floor
-                    const p = project(x, 0, relZ);
-                    const w = 100 * p.scale;
-                    const h = 50 * p.scale; // Length on floor
-                    ctx.fillStyle = '#000';
-                    ctx.beginPath();
-                    ctx.ellipse(p.x, p.y, w / 2, w / 2, 0, 0, Math.PI * 2); // Simple circle pit
-                    ctx.fill();
-                } else {
-                    drawSprite3D(obj.type, x, player.y, relZ, obj.width, obj.height);
-                }
-            });
-
-            // Draw Player
-            drawSprite3D('player', player.x, player.y, 0, 60, 80);
-
+            if (gameState === 'PLAYING') update();
+            draw();
             requestAnimationFrame(loop);
         }
     </script>
