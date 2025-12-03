@@ -86,6 +86,7 @@
             enemy2: new Image(),
             enemy3: new Image(),
             introBg: new Image(),
+            parkBg: new Image(), // New asset
             dreamBg: new Image()
         };
         let assetsLoaded = 0;
@@ -94,11 +95,13 @@
             assets[name].src = src;
             assets[name].onload = () => {
                 assetsLoaded++;
-                if (assetsLoaded === 8) startGame();
+                if (assetsLoaded === 9) startGame();
             };
             assets[name].onerror = () => {
                 console.error("Failed to load asset: " + src);
-                // alert("Error loading asset: " + src);
+                // Auto-resolve on error so game starts even if missing
+                assetsLoaded++;
+                if (assetsLoaded === 9) startGame();
             };
         }
 
@@ -109,6 +112,7 @@
         loadAsset('enemy2', 'assets/enemy2.png');
         loadAsset('enemy3', 'assets/enemy3.png');
         loadAsset('introBg', 'assets/intro_bg.png');
+        loadAsset('parkBg', 'assets/park_bg.png'); // User will provide this
         loadAsset('dreamBg', 'assets/dream_bg.png');
 
         // --- GAME STATE ---
@@ -134,7 +138,11 @@
         const introLines = [
             { text: "PROFESSOR: 'Excellent work. The manuscript is ready.'", bg: 'introBg' },
             { text: "PROFESSOR: 'But beware... Reviewer 2 is in a bad mood today.'", bg: 'introBg' },
-            { text: "RESEARCHER: 'I'll just take a quick nap before submitting...'", bg: 'introBg' },
+            { text: "*WALKING IN THE PARK*", bg: 'parkBg' },
+            { text: "SUPERVISOR: 'Remember, reject the rejection! Be robust!'", bg: 'parkBg' },
+            { text: "SUPERVISOR: 'Focus on your novelty. Don't let them grind you down.'", bg: 'parkBg' },
+            { text: "RESEARCHER: 'Thanks. I'll head home and submit.'", bg: 'parkBg' },
+            { text: "*BACK AT HOME - NAP TIME*", bg: 'introBg' },
             { text: "*ENTERING THE NIGHTMARE REALM*", bg: 'dreamBg' }
         ];
 
@@ -231,7 +239,7 @@
             const scale = FOV / (FOV + z);
             return {
                 x: (x * scale) + canvas.width / 2,
-                y: ((y - CAMERA_Y) * scale) + canvas.height / 2,
+                y: ((y - CAMERA_Y) * scale) + canvas.height * 0.4,
                 scale: scale
             };
         }
@@ -252,7 +260,13 @@
             }
 
             // Spawn & Cleanup
-            if (objects.length > 0 && objects[objects.length - 1].z < DRAW_DISTANCE - 400) spawnObject(objects[objects.length - 1].z + 500);
+            if (objects.length === 0 || objects[objects.length - 1].z < worldZ + DRAW_DISTANCE) {
+                let lastZ = objects.length > 0 ? objects[objects.length - 1].z : worldZ + 1000;
+                if (lastZ < worldZ + DRAW_DISTANCE) {
+                    spawnObject(lastZ + 500);
+                }
+            }
+
             objects = objects.filter(obj => obj.z - worldZ > -200);
 
             // Particles
@@ -289,11 +303,18 @@
 
             if (gameState === 'INTRO') {
                 const bg = assets[introLines[introStep].bg];
-                if (bg.complete) {
+                if (bg.complete && bg.src) {
                     const scale = Math.max(canvas.width / bg.width, canvas.height / bg.height);
                     const w = bg.width * scale;
                     const h = bg.height * scale;
                     ctx.drawImage(bg, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+                } else {
+                    // Fallback if image missing
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '20px Arial';
+                    ctx.fillText("Scene: " + introLines[introStep].text, 50, canvas.height / 2);
                 }
                 return;
             }
@@ -364,17 +385,19 @@
                 });
 
                 // 5. Player
-                const px = canvas.width / 2 + player.x;
-                const py = canvas.height / 2 - CAMERA_Y + player.y + 100;
+                // Consistent projection
+                const pProj = project(player.x, player.y, 0);
+                const ppx = pProj.x;
+                const ppy = pProj.y;
                 const ps = 200;
 
                 ctx.save();
                 let sprite;
                 if (player.isSpinning) {
                     sprite = assets.researcherSpin;
-                    ctx.translate(px, py);
+                    ctx.translate(ppx, ppy);
                     ctx.rotate(frame * 0.5);
-                    ctx.drawImage(sprite, -ps / 2, -ps / 2, ps, ps);
+                    ctx.drawImage(sprite, -ps / 2, -ps, ps, ps);
                 } else {
                     if (player.isJumping) sprite = assets.researcherJump;
                     else sprite = assets.researcherRun;
@@ -382,7 +405,7 @@
                     let bobY = 0;
                     if (!player.isJumping) bobY = Math.sin(frame * 0.5) * 10;
 
-                    ctx.drawImage(sprite, px - ps / 2, py - ps + bobY, ps, ps);
+                    ctx.drawImage(sprite, ppx - ps / 2, ppy - ps + bobY, ps, ps);
                 }
                 ctx.restore();
             }
