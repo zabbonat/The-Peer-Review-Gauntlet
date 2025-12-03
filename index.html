@@ -166,9 +166,11 @@
 
         const player = { lane: 0, x: 0, y: 0, vy: 0, isJumping: false, isSpinning: false, spinTimer: 0, targetX: 0 };
         let objects = [];
+        let particles = [];
 
         function initGame() {
             objects = [];
+            particles = [];
             worldZ = 0;
             score = 0;
             lives = 3;
@@ -203,7 +205,6 @@
 
             if (r > 0.6) {
                 type = 'enemy';
-                // Random enemy subtype
                 const rand = Math.random();
                 if (rand < 0.33) subtype = 'enemy1';
                 else if (rand < 0.66) subtype = 'enemy2';
@@ -213,6 +214,17 @@
             }
 
             objects.push({ type, subtype, lane, z, active: true });
+        }
+
+        function spawnParticle() {
+            particles.push({
+                x: (Math.random() - 0.5) * 2000,
+                y: (Math.random() - 0.5) * 2000,
+                z: DRAW_DISTANCE,
+                vx: (Math.random() - 0.5) * 10,
+                vy: (Math.random() - 0.5) * 10,
+                color: Math.random() > 0.5 ? '#fff' : '#bdc3c7'
+            });
         }
 
         function project(x, y, z) {
@@ -243,6 +255,11 @@
             if (objects.length > 0 && objects[objects.length - 1].z < DRAW_DISTANCE - 400) spawnObject(objects[objects.length - 1].z + 500);
             objects = objects.filter(obj => obj.z - worldZ > -200);
 
+            // Particles
+            if (Math.random() > 0.5) spawnParticle();
+            particles.forEach(p => p.z -= speed * 1.5);
+            particles = particles.filter(p => p.z > 0);
+
             // Collisions
             objects.forEach(obj => {
                 if (!obj.active) return;
@@ -268,12 +285,9 @@
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (gameState === 'LOADING') {
-                return;
-            }
+            if (gameState === 'LOADING') return;
 
             if (gameState === 'INTRO') {
-                // Draw Intro Background
                 const bg = assets[introLines[introStep].bg];
                 if (bg.complete) {
                     const scale = Math.max(canvas.width / bg.width, canvas.height / bg.height);
@@ -285,60 +299,86 @@
             }
 
             if (gameState === 'PLAYING') {
-                // Draw Dream Background (Parallax)
+                // 1. Dynamic Sky (Pulse)
                 const bg = assets.dreamBg;
                 if (bg.complete) {
-                    const scale = Math.max(canvas.width / bg.width, canvas.height / bg.height);
-                    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+                    const pulse = Math.sin(frame * 0.01) * 0.05 + 1.05;
+                    const scale = Math.max(canvas.width / bg.width, canvas.height / bg.height) * pulse;
+                    const w = bg.width * scale;
+                    const h = bg.height * scale;
+                    ctx.drawImage(bg, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
                 }
 
-                // Draw Objects
+                // 2. 3D Scrolling Floor Grid
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                // Longitudinal
+                for (let x = -3; x <= 3; x++) {
+                    const p1 = project(x * LANE_WIDTH, 0, 10);
+                    const p2 = project(x * LANE_WIDTH, 0, DRAW_DISTANCE);
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                }
+                // Latitudinal (Moving)
+                const offsetZ = worldZ % 500;
+                for (let z = 0; z < DRAW_DISTANCE; z += 500) {
+                    const drawZ = z - offsetZ;
+                    if (drawZ < 10) continue;
+                    const p1 = project(-3 * LANE_WIDTH, 0, drawZ);
+                    const p2 = project(3 * LANE_WIDTH, 0, drawZ);
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                }
+                ctx.stroke();
+
+                // 3. Particles
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                particles.forEach(p => {
+                    const proj = project(p.x, p.y, p.z);
+                    const size = proj.scale * 20;
+                    ctx.fillRect(proj.x, proj.y, size, size);
+                });
+
+                // 4. Objects
                 const visibleObjects = objects.filter(obj => obj.active && obj.z - worldZ > 0);
                 visibleObjects.sort((a, b) => b.z - a.z);
 
                 visibleObjects.forEach(obj => {
                     const relZ = obj.z - worldZ;
                     const p = project(obj.lane * LANE_WIDTH, 0, relZ);
-                    const s = p.scale * 200; // Base size
+                    const s = p.scale * 200;
 
                     if (obj.type === 'enemy') {
-                        // Draw specific enemy sprite
                         const sprite = assets[obj.subtype];
                         if (sprite && sprite.complete) {
                             ctx.drawImage(sprite, p.x - s / 2, p.y - s, s, s);
                         } else {
-                            // Fallback
                             ctx.fillStyle = 'red';
                             ctx.fillRect(p.x - s / 2, p.y - s, s, s);
                         }
                     } else {
-                        // Crate
                         ctx.fillStyle = 'orange';
                         ctx.fillRect(p.x - s / 2, p.y - s, s, s);
                     }
                 });
 
-                // Draw Player
-                const pScale = 1.0; // Player is at Z=0
+                // 5. Player
                 const px = canvas.width / 2 + player.x;
-                const py = canvas.height / 2 - CAMERA_Y + player.y + 100; // Offset
+                const py = canvas.height / 2 - CAMERA_Y + player.y + 100;
                 const ps = 200;
 
                 ctx.save();
                 let sprite;
                 if (player.isSpinning) {
                     sprite = assets.researcherSpin;
-                    // Spin rotation effect
                     ctx.translate(px, py);
                     ctx.rotate(frame * 0.5);
                     ctx.drawImage(sprite, -ps / 2, -ps / 2, ps, ps);
                 } else {
-                    if (player.isJumping) {
-                        sprite = assets.researcherJump;
-                    } else {
-                        sprite = assets.researcherRun;
-                    }
-                    // Bobbing effect for run
+                    if (player.isJumping) sprite = assets.researcherJump;
+                    else sprite = assets.researcherRun;
+
                     let bobY = 0;
                     if (!player.isJumping) bobY = Math.sin(frame * 0.5) * 10;
 
