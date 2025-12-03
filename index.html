@@ -79,8 +79,12 @@
 
         // --- ASSETS ---
         const assets = {
-            researcher: new Image(),
-            enemies: new Image(),
+            researcherRun: new Image(),
+            researcherJump: new Image(),
+            researcherSpin: new Image(),
+            enemy1: new Image(),
+            enemy2: new Image(),
+            enemy3: new Image(),
             introBg: new Image(),
             dreamBg: new Image()
         };
@@ -90,12 +94,20 @@
             assets[name].src = src;
             assets[name].onload = () => {
                 assetsLoaded++;
-                if (assetsLoaded === 4) startGame();
+                if (assetsLoaded === 8) startGame();
+            };
+            assets[name].onerror = () => {
+                console.error("Failed to load asset: " + src);
+                // alert("Error loading asset: " + src);
             };
         }
 
-        loadAsset('researcher', 'assets/researcher.png');
-        loadAsset('enemies', 'assets/enemies.png');
+        loadAsset('researcherRun', 'assets/researcher_run.png');
+        loadAsset('researcherJump', 'assets/researcher_jump.png');
+        loadAsset('researcherSpin', 'assets/researcher_spin.png');
+        loadAsset('enemy1', 'assets/enemy1.png');
+        loadAsset('enemy2', 'assets/enemy2.png');
+        loadAsset('enemy3', 'assets/enemy3.png');
         loadAsset('introBg', 'assets/intro_bg.png');
         loadAsset('dreamBg', 'assets/dream_bg.png');
 
@@ -185,8 +197,22 @@
 
         function spawnObject(z) {
             const lane = Math.floor(Math.random() * 3) - 1;
-            const type = Math.random() > 0.5 ? 'enemy' : 'crate';
-            objects.push({ type, lane, z, active: true });
+            const r = Math.random();
+            let type = 'crate';
+            let subtype = ''; // For enemies
+
+            if (r > 0.6) {
+                type = 'enemy';
+                // Random enemy subtype
+                const rand = Math.random();
+                if (rand < 0.33) subtype = 'enemy1';
+                else if (rand < 0.66) subtype = 'enemy2';
+                else subtype = 'enemy3';
+            } else {
+                type = 'crate';
+            }
+
+            objects.push({ type, subtype, lane, z, active: true });
         }
 
         function project(x, y, z) {
@@ -249,23 +275,22 @@
             if (gameState === 'INTRO') {
                 // Draw Intro Background
                 const bg = assets[introLines[introStep].bg];
-                // Draw cover to fill screen
-                const scale = Math.max(canvas.width / bg.width, canvas.height / bg.height);
-                const w = bg.width * scale;
-                const h = bg.height * scale;
-                ctx.drawImage(bg, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+                if (bg.complete) {
+                    const scale = Math.max(canvas.width / bg.width, canvas.height / bg.height);
+                    const w = bg.width * scale;
+                    const h = bg.height * scale;
+                    ctx.drawImage(bg, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+                }
                 return;
             }
 
             if (gameState === 'PLAYING') {
                 // Draw Dream Background (Parallax)
                 const bg = assets.dreamBg;
-                // Simple tiling or stretch
-                const scale = Math.max(canvas.width / bg.width, canvas.height / bg.height);
-                ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-
-                // Draw Floor (Transparent/Grid)
-                // ... (Omitted for visual clarity with full BG)
+                if (bg.complete) {
+                    const scale = Math.max(canvas.width / bg.width, canvas.height / bg.height);
+                    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+                }
 
                 // Draw Objects
                 const visibleObjects = objects.filter(obj => obj.active && obj.z - worldZ > 0);
@@ -277,9 +302,15 @@
                     const s = p.scale * 200; // Base size
 
                     if (obj.type === 'enemy') {
-                        // Draw Enemy Sprite (Assuming sprite sheet, taking a crop)
-                        // Source: 0,0, 100,100 (Example)
-                        ctx.drawImage(assets.enemies, 0, 0, 256, 256, p.x - s / 2, p.y - s, s, s);
+                        // Draw specific enemy sprite
+                        const sprite = assets[obj.subtype];
+                        if (sprite && sprite.complete) {
+                            ctx.drawImage(sprite, p.x - s / 2, p.y - s, s, s);
+                        } else {
+                            // Fallback
+                            ctx.fillStyle = 'red';
+                            ctx.fillRect(p.x - s / 2, p.y - s, s, s);
+                        }
                     } else {
                         // Crate
                         ctx.fillStyle = 'orange';
@@ -294,13 +325,24 @@
                 const ps = 200;
 
                 ctx.save();
+                let sprite;
                 if (player.isSpinning) {
+                    sprite = assets.researcherSpin;
+                    // Spin rotation effect
                     ctx.translate(px, py);
                     ctx.rotate(frame * 0.5);
-                    ctx.drawImage(assets.researcher, 0, 0, 256, 256, -ps / 2, -ps / 2, ps, ps);
+                    ctx.drawImage(sprite, -ps / 2, -ps / 2, ps, ps);
                 } else {
-                    // Draw Researcher Sprite
-                    ctx.drawImage(assets.researcher, 0, 0, 256, 256, px - ps / 2, py - ps, ps, ps);
+                    if (player.isJumping) {
+                        sprite = assets.researcherJump;
+                    } else {
+                        sprite = assets.researcherRun;
+                    }
+                    // Bobbing effect for run
+                    let bobY = 0;
+                    if (!player.isJumping) bobY = Math.sin(frame * 0.5) * 10;
+
+                    ctx.drawImage(sprite, px - ps / 2, py - ps + bobY, ps, ps);
                 }
                 ctx.restore();
             }
