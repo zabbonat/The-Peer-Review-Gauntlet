@@ -2,7 +2,7 @@
 
 > *A satirical tower defense game about academic publishing*
 
-**[▶️ PLAY NOW](https://YOUR_USERNAME.github.io/peer-review-gauntlet/)**
+**[▶️ PLAY NOW](https://zabbonat.github.io/The-Peer-Review-Gauntlet/)**
 
 ![Game Preview](preview.png)
 
@@ -49,19 +49,6 @@ Now your Manuscript must traverse the dreaded **Gauntlet** — a perilous path f
 - **"Flawless Victory"** — Win with more than 80 HP
 - **"Caffeinated"** — Use coffee 3 times
 - **"Ghosted"** — Encounter Reviewer 3
-
-## 🚀 Deployment
-
-### GitHub Pages
-
-1. Fork this repository
-2. Go to Settings → Pages
-3. Select "Deploy from a branch" → main → root
-4. Your game will be live at `https://YOUR_USERNAME.github.io/peer-review-gauntlet/`
-
-### Local Development
-
-Simply open `index.html` in your browser. No build step required!
 
 ## 🔧 Technical Details
 
